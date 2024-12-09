@@ -1,0 +1,44 @@
+.sessions-container {
+    margin-top: 30px;
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.session-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.session-card:last-child {
+    border-bottom: none;
+}
+
+.session-date {
+    font-weight: bold;
+    color: #444;
+}
+
+.session-details {
+    display: flex;
+    gap: 20px;
+    color: #666;
+}
+
+.delete-btn {
+    background-color: #ff4444;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+}
+
+.delete-btn:hover {
+    background-color: #cc0000;
+} 
