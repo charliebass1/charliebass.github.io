@@ -1,32 +1,117 @@
 class SaunaTracker {
     constructor() {
         this.form = document.getElementById('saunaForm');
-        this.sessions = JSON.parse(localStorage.getItem('saunaSessions')) || [];
+        this.sessions = [];
         
         this.initializeEventListeners();
-        this.displaySessions();
+        this.loadSessions();
     }
 
     initializeEventListeners() {
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
 
-    handleSubmit(e) {
+    async loadSessions() {
+        try {
+            const response = await fetch('http://localhost:5000/api/sessions');
+            if (!response.ok) throw new Error('Failed to fetch sessions');
+            this.sessions = await response.json();
+            this.displaySessions();
+        } catch (error) {
+            this.showError(['Failed to load sessions']);
+        }
+    }
+
+    async handleSubmit(e) {
         e.preventDefault();
         
         const session = {
-            id: Date.now(),
             date: document.getElementById('date').value,
-            duration: document.getElementById('duration').value,
-            temperature: document.getElementById('temperature').value,
-            timestamp: new Date().toISOString()
+            duration: parseInt(document.getElementById('duration').value),
+            temperature: parseInt(document.getElementById('temperature').value)
         };
 
-        this.sessions.push(session);
-        localStorage.setItem('saunaSessions', JSON.stringify(this.sessions));
+        const errors = this.validateSession(session);
+        if (errors.length > 0) {
+            this.showError(errors);
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/sessions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(session)
+            });
+
+            if (!response.ok) throw new Error('Network response was not ok');
+            
+            const savedSession = await response.json();
+            this.sessions.push(savedSession);
+            this.displaySessions();
+            this.form.reset();
+            this.showError([]);
+        } catch (error) {
+            this.showError(['Failed to save session. Please try again.']);
+        }
+    }
+
+    async deleteSession(id) {
+        try {
+            const response = await fetch(`http://localhost:5000/api/sessions/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) throw new Error('Failed to delete session');
+            
+            this.sessions = this.sessions.filter(session => session._id !== id);
+            this.displaySessions();
+        } catch (error) {
+            this.showError(['Failed to delete session']);
+        }
+    }
+
+    validateSession(session) {
+        const errors = [];
         
-        this.displaySessions();
-        this.form.reset();
+        // Date validation
+        if (!session.date) {
+            errors.push("Date is required");
+        } else if (new Date(session.date) > new Date()) {
+            errors.push("Date cannot be in the future");
+        }
+
+        // Duration validation
+        if (!session.duration) {
+            errors.push("Duration is required");
+        } else if (session.duration < 1 || session.duration > 60) {
+            errors.push("Duration must be between 1 and 60 minutes");
+        }
+
+        // Temperature validation
+        if (!session.temperature) {
+            errors.push("Temperature is required");
+        } else if (session.temperature < 120 || session.temperature > 230) {
+            errors.push("Temperature must be between 120°F and 230°F");
+        }
+
+        return errors;
+    }
+
+    showError(errors) {
+        const errorDiv = document.getElementById('errorMessages') || this.createErrorDiv();
+        errorDiv.innerHTML = errors.map(error => `<p>${error}</p>`).join('');
+        errorDiv.style.display = errors.length ? 'block' : 'none';
+    }
+
+    createErrorDiv() {
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'errorMessages';
+        errorDiv.className = 'error-messages';
+        this.form.insertBefore(errorDiv, this.form.firstChild);
+        return errorDiv;
     }
 
     displaySessions() {
@@ -42,17 +127,11 @@ class SaunaTracker {
                         <span>${session.duration} minutes</span>
                         <span>${session.temperature}°F</span>
                     </div>
-                    <button onclick="saunaTracker.deleteSession(${session.id})" class="delete-btn">
+                    <button onclick="saunaTracker.deleteSession('${session._id}')" class="delete-btn">
                         Delete
                     </button>
                 </div>
             `).join('');
-    }
-
-    deleteSession(id) {
-        this.sessions = this.sessions.filter(session => session.id !== id);
-        localStorage.setItem('saunaSessions', JSON.stringify(this.sessions));
-        this.displaySessions();
     }
 }
 
