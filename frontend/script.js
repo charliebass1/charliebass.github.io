@@ -140,3 +140,6 @@ let saunaTracker;
 document.addEventListener('DOMContentLoaded', () => {
     saunaTracker = new SaunaTracker();
 }); 
+
+// Make sure this matches your Render URL exactly
+const API_URL = 'https://sauna-tracker.onrender.com';  // Replace with your actual Render URL 
