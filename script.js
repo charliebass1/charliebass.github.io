@@ -2,6 +2,7 @@ class SaunaTracker {
     constructor() {
         this.form = document.getElementById('saunaForm');
         this.sessions = [];
+        this.API_URL = 'https://sauna-tracker.onrender.com/api/sessions';
         
         this.initializeEventListeners();
         this.loadSessions();
@@ -13,11 +14,12 @@ class SaunaTracker {
 
     async loadSessions() {
         try {
-            const response = await fetch(`https://sauna-tracker.onrender.com`);
+            const response = await fetch(this.API_URL);
             if (!response.ok) throw new Error('Failed to fetch sessions');
             this.sessions = await response.json();
             this.displaySessions();
         } catch (error) {
+            console.error('Load error:', error);
             this.showError(['Failed to load sessions']);
         }
     }
@@ -31,14 +33,10 @@ class SaunaTracker {
             temperature: parseInt(document.getElementById('temperature').value)
         };
 
-        const errors = this.validateSession(session);
-        if (errors.length > 0) {
-            this.showError(errors);
-            return;
-        }
+        console.log('Submitting session:', session);
 
         try {
-            const response = await fetch(`https://sauna-tracker.onrender.com`, {
+            const response = await fetch(this.API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -46,14 +44,23 @@ class SaunaTracker {
                 body: JSON.stringify(session)
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Server error:', errorData);
+                throw new Error('Network response was not ok');
+            }
             
             const savedSession = await response.json();
+            console.log('Saved session:', savedSession);
+            
             this.sessions.push(savedSession);
             this.displaySessions();
             this.form.reset();
             this.showError([]);
         } catch (error) {
+            console.error('Error details:', error);
             this.showError(['Failed to save session. Please try again.']);
         }
     }
